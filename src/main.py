@@ -48,18 +48,32 @@ def main():
     print(f"Loading dataset from: {dataset_path}")
     data = pd.read_csv(dataset_path)
 
+    # Normalize column names for known dataset formats
+    if 'label' in data.columns and 'message' in data.columns:
+        label_col = 'label'
+        message_col = 'message'
+    elif 'v1' in data.columns and 'v2' in data.columns:
+        label_col = 'label'
+        message_col = 'message'
+        data = data.rename(columns={'v1': 'label', 'v2': 'message'})
+    else:
+        raise KeyError(
+            "Dataset headers not recognized. Expected ['label','message'] or ['v1','v2']. "
+            f"Found: {list(data.columns)}"
+        )
+
     print("Dataset loaded. Sample:")
     print(data.head())
     print("\nLabel counts:")
-    print(data['label'].value_counts())
+    print(data[label_col].value_counts())
 
     data.dropna(inplace=True)
-    data['message_clean'] = data['message'].apply(preprocess)
+    data['message_clean'] = data[message_col].apply(preprocess)
 
     print("\nSample cleaned messages:")
-    print(data[['message', 'message_clean']].head())
+    print(data[[message_col, 'message_clean']].head())
 
-    data['label_num'] = data['label'].map({'ham': 0, 'spam': 1})
+    data['label_num'] = data[label_col].map({'ham': 0, 'spam': 1})
 
     X_train, X_test, y_train, y_test = train_test_split(
         data['message_clean'], data['label_num'], test_size=0.2, random_state=42
