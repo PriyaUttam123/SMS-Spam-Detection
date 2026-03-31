@@ -5,7 +5,7 @@ import string
 import nltk
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 import joblib
 import os
@@ -40,9 +40,9 @@ else:
     X_train, X_test, y_train, y_test = train_test_split(
         data['message_clean'], data['label_num'], test_size=0.2, random_state=42
     )
-    vectorizer = TfidfVectorizer()
+    vectorizer = TfidfVectorizer(max_features=5000)
     X_train_vec = vectorizer.fit_transform(X_train)
-    model = MultinomialNB()
+    model = LogisticRegression()
     model.fit(X_train_vec, y_train)
     joblib.dump(model, model_path)
     joblib.dump(vectorizer, vectorizer_path)
@@ -55,8 +55,11 @@ sms_input = st.text_area("Enter your SMS message:")
 if st.button("Predict"):
     if sms_input.strip():
         sms_clean = preprocess(sms_input)
+        st.write(f"Cleaned message: '{sms_clean}'")
         sms_vec = vectorizer.transform([sms_clean])
         prediction = model.predict(sms_vec)[0]
+        prob = model.predict_proba(sms_vec)[0]
+        st.write(f"Spam probability: {prob[1]:.2f}, Ham probability: {prob[0]:.2f}")
         st.success("Spam" if prediction == 1 else "Ham")
     else:
         st.error("Please enter a message.")
